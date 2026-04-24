@@ -1,0 +1,72 @@
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_PUBLIC_PORT:-5433}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PUBLIC_PORT:-6379}:6379"
+
+  kafka:
+    ports:
+      - "${KAFKA_EXTERNAL_PORT:-29092}:29092"
+
+  minio:
+    ports:
+      - "${MINIO_API_PUBLIC_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PUBLIC_PORT:-9001}:9001"
+
+  mailhog:
+    image: ${MAILHOG_IMAGE}
+    restart: unless-stopped
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+    networks:
+      - autoshop
+
+  auth:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/auth.env
+    ports:
+      - "${AUTH_PUBLIC_PORT:-8082}:8082"
+
+  core:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/core.env
+    ports:
+      - "${CORE_PUBLIC_PORT:-8080}:8080"
+
+  notification:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/notification.env
+    depends_on:
+      mailhog:
+        condition: service_started
+    ports:
+      - "${NOTIFICATION_PUBLIC_PORT:-8083}:8083"
+
+  files:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/files.env
+    ports:
+      - "${FILES_PUBLIC_PORT:-8084}:8084"
+
+  nginx:
+    image: ${NGINX_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      - core
+      - auth
+      - notification
+      - files
+    ports:
+      - "${NGINX_HTTP_PORT:-8088}:80"
+    volumes:
+      - ${NGINX_CONF}:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - autoshop

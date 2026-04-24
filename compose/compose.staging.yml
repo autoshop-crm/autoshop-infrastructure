@@ -1,0 +1,51 @@
+services:
+  minio:
+    ports:
+      - "127.0.0.1:${MINIO_CONSOLE_PUBLIC_PORT:-9001}:9001"
+
+  mailhog:
+    image: ${MAILHOG_IMAGE}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAILHOG_UI_PORT:-8025}:8025"
+    networks:
+      - autoshop
+
+  auth:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/auth.env
+
+  core:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/core.env
+
+  notification:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/notification.env
+    depends_on:
+      mailhog:
+        condition: service_started
+
+  files:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/files.env
+
+  nginx:
+    image: ${NGINX_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      - core
+      - auth
+      - notification
+      - files
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+    volumes:
+      - ${NGINX_CONF}:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - autoshop

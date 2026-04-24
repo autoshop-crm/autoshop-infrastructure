@@ -1,0 +1,35 @@
+services:
+  auth:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/auth.env
+
+  core:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/core.env
+
+  notification:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/notification.env
+
+  files:
+    env_file:
+      - ${ENV_DIR}/infrastructure.env
+      - ${ENV_DIR}/files.env
+
+  nginx:
+    image: ${NGINX_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      - core
+      - auth
+      - notification
+      - files
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+    volumes:
+      - ${NGINX_CONF}:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - autoshop

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/../lib/common.sh"
+
+env="${1:-${ENVIRONMENT:-local}}"
+set_context "$env"
+require_env_files "$env"
+
+compose_cmd "$env" config >/dev/null
+log "docker compose config is valid for $env"
