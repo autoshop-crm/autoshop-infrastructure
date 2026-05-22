@@ -187,7 +187,7 @@ read_env_value() {
 
   [[ -f "$file" ]] || return 0
 
-  grep -E "^${key}=" "$file" | head -n 1 | cut -d= -f2- | sed 's/^"//; s/"$//'
+  grep -E "^${key}=" "$file" | head -n 1 | cut -d= -f2- | sed 's/^"//; s/"$//' || true
 }
 
 is_placeholder_secret() {
