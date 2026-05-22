@@ -16,6 +16,10 @@ if [[ "$env" == "local" ]]; then
   target_dir="$ROOT_DIR"
 fi
 
+if [[ ! -e "$target_dir" ]]; then
+  target_dir="$(dirname "$target_dir")"
+fi
+
 available_kb="$(df -Pk "$target_dir" | awk 'NR==2 {print $4}')"
 available_gb="$((available_kb / 1024 / 1024))"
 recommended_gb="${DISK_REQUIRED_GB:-12}"
