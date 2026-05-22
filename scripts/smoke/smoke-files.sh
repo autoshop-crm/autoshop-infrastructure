@@ -18,8 +18,8 @@ if [[ "$SMOKE_RUN_FILES_CRUD" != "true" ]]; then
   exit 0
 fi
 
-tmp_file="$(mktemp)"
-printf 'autoshop smoke test\n' >"$tmp_file"
+tmp_file="$(mktemp "${TMPDIR:-/tmp}/autoshop-smoke.XXXXXX.pdf")"
+printf '%s\n' '%PDF-1.4' 'autoshop smoke test' >"$tmp_file"
 
 response="$(
   curl -fsS \
@@ -27,7 +27,7 @@ response="$(
     -F ownerType=ORDER \
     -F ownerId=smoke-order \
     -F uploadedBy=infra-smoke \
-    -F "file=@$tmp_file;type=text/plain" \
+    -F "file=@$tmp_file;type=application/pdf" \
     "$base_url/api/files"
 )"
 

@@ -24,11 +24,12 @@ services:
   redis:
     image: ${REDIS_IMAGE}
     restart: unless-stopped
+    working_dir: /data
     command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
     volumes:
       - ${DATA_ROOT}/redis:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -h 127.0.0.1 ping | grep PONG >/dev/null"]
       interval: 10s
       timeout: 5s
       retries: 10

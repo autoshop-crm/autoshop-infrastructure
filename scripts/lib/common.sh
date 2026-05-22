@@ -62,8 +62,6 @@ set_context() {
       export ENV_DIR="${ENV_DIR:-$AUTOSHOP_HOME/env/staging}"
       export DATA_ROOT="${DATA_ROOT:-$AUTOSHOP_HOME/data/staging}"
       export NGINX_CONF="${NGINX_CONF:-$ROOT_DIR/nginx/staging/autoshop.conf}"
-      export WEB_SPEC_SOURCE_DIR="${WEB_SPEC_SOURCE_DIR:-$AUTOSHOP_HOME/apps/autoshop-web-spec}"
-      export CLIENT_WEB_SOURCE_DIR="${CLIENT_WEB_SOURCE_DIR:-$AUTOSHOP_HOME/apps/autoshop-client-web/FrontClient}"
       export BACKUP_ROOT="${BACKUP_ROOT:-$AUTOSHOP_HOME/backups}"
       export NGINX_HTTP_PORT="${NGINX_HTTP_PORT:-80}"
       ;;
@@ -71,8 +69,6 @@ set_context() {
       export ENV_DIR="${ENV_DIR:-$AUTOSHOP_HOME/env/prod}"
       export DATA_ROOT="${DATA_ROOT:-$AUTOSHOP_HOME/data/prod}"
       export NGINX_CONF="${NGINX_CONF:-$ROOT_DIR/nginx/prod/autoshop.conf}"
-      export WEB_SPEC_SOURCE_DIR="${WEB_SPEC_SOURCE_DIR:-$AUTOSHOP_HOME/apps/autoshop-web-spec}"
-      export CLIENT_WEB_SOURCE_DIR="${CLIENT_WEB_SOURCE_DIR:-$AUTOSHOP_HOME/apps/autoshop-client-web/FrontClient}"
       export BACKUP_ROOT="${BACKUP_ROOT:-$AUTOSHOP_HOME/backups}"
       export NGINX_HTTP_PORT="${NGINX_HTTP_PORT:-80}"
       ;;
@@ -86,8 +82,10 @@ set_context() {
   export BACKUP_ROOT="$(abspath "$BACKUP_ROOT")"
   export NGINX_CONF="$(abspath "$NGINX_CONF")"
   export POSTGRES_INIT_DIR="$(abspath "$POSTGRES_INIT_DIR")"
-  export WEB_SPEC_SOURCE_DIR="$(abspath "$WEB_SPEC_SOURCE_DIR")"
-  export CLIENT_WEB_SOURCE_DIR="$(abspath "$CLIENT_WEB_SOURCE_DIR")"
+  if [[ "$env" == "local" ]]; then
+    export WEB_SPEC_SOURCE_DIR="$(abspath "$WEB_SPEC_SOURCE_DIR")"
+    export CLIENT_WEB_SOURCE_DIR="$(abspath "$CLIENT_WEB_SOURCE_DIR")"
+  fi
 
   export POSTGRES_IMAGE="${POSTGRES_IMAGE:-postgres:16-alpine}"
   export REDIS_IMAGE="${REDIS_IMAGE:-redis:7-alpine}"
@@ -125,7 +123,12 @@ set_context() {
   export CLIENT_WEB_PUBLIC_PORT="${CLIENT_WEB_PUBLIC_PORT:-5174}"
   export BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-7}"
   export LOCAL_BUILD_FROM_SOURCE="${LOCAL_BUILD_FROM_SOURCE:-true}"
+  export LOCAL_USE_GHCR_IMAGES="${LOCAL_USE_GHCR_IMAGES:-false}"
   export SMOKE_RUN_FILES_CRUD="${SMOKE_RUN_FILES_CRUD:-true}"
+
+  if [[ "$env" == "local" && "$LOCAL_USE_GHCR_IMAGES" == "true" && "${NGINX_CONF:-$ROOT_DIR/nginx/local/autoshop.conf}" == "$ROOT_DIR/nginx/local/autoshop.conf" ]]; then
+    export NGINX_CONF="$ROOT_DIR/nginx/local/autoshop.images.conf"
+  fi
 }
 
 compose_cmd() {
@@ -134,10 +137,14 @@ compose_cmd() {
   (
     cd "$ROOT_DIR"
     set_context "$env"
-    docker compose \
-      -f "$ROOT_DIR/compose/compose.base.yml" \
-      -f "$ROOT_DIR/compose/compose.$env.yml" \
-      "$@"
+    local compose_args=(
+      -f "$ROOT_DIR/compose/compose.base.yml"
+      -f "$ROOT_DIR/compose/compose.$env.yml"
+    )
+    if [[ "$env" == "local" && "$LOCAL_USE_GHCR_IMAGES" == "true" ]]; then
+      compose_args+=(-f "$ROOT_DIR/compose/compose.local.images.yml")
+    fi
+    docker compose "${compose_args[@]}" "$@"
   )
 }
 
@@ -156,6 +163,7 @@ require_web_source_dirs() {
   set_context "$env"
 
   [[ "$env" == "local" ]] || return 0
+  [[ "$LOCAL_USE_GHCR_IMAGES" != "true" ]] || return 0
 
   [[ -d "$WEB_SPEC_SOURCE_DIR" ]] || die "Missing web spec source dir: $WEB_SPEC_SOURCE_DIR"
   [[ -f "$WEB_SPEC_SOURCE_DIR/package.json" ]] || die "Missing web spec package.json: $WEB_SPEC_SOURCE_DIR/package.json"

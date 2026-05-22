@@ -16,7 +16,7 @@ password="SmokePass123!"
 
 register_status="$(curl -s -o /dev/null -w '%{http_code}' \
   -H 'Content-Type: application/json' \
-  -d "{\"email\":\"$email\",\"password\":\"$password\",\"firstName\":\"Smoke\",\"lastName\":\"User\"}" \
+  -d "{\"email\":\"$email\",\"password\":\"$password\",\"firstName\":\"Smoke\",\"lastName\":\"User\",\"acceptTerms\":true,\"acceptPrivacyPolicy\":true}" \
   "$base_url/api/auth/register")"
 
 case "$register_status" in

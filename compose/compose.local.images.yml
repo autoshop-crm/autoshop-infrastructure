@@ -1,0 +1,38 @@
+services:
+  auth:
+    platform: linux/amd64
+
+  core:
+    platform: linux/amd64
+
+  notification:
+    platform: linux/amd64
+
+  files:
+    platform: linux/amd64
+
+  web-spec:
+    platform: linux/amd64
+    image: ${WEB_SPEC_IMAGE}:${WEB_SPEC_IMAGE_TAG}
+    working_dir:
+    command:
+    environment: {}
+    volumes: []
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80 >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+  client-web:
+    platform: linux/amd64
+    image: ${CLIENT_WEB_IMAGE}:${CLIENT_WEB_IMAGE_TAG}
+    working_dir:
+    command:
+    environment: {}
+    volumes: []
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80 >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20

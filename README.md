@@ -6,6 +6,8 @@
 - `autoshop-auth`
 - `autoshop-notification`
 - `autoshop-files`
+- `autoshop-web-spec`
+- `autoshop-client-web`
 - PostgreSQL
 - Redis
 - Kafka
@@ -19,6 +21,7 @@
 - Docker Compose v2
 - `curl`
 - для локальной сборки из исходников: доступ к соседним репозиториям `../autoshop-core`, `../autoshop-auth`, `../autoshop-notification`, `../autoshop-files`
+- для локальной web-интеграции: доступ к `../autoshop-web-spec` и `../autoshop-client-web/FrontClient`
 
 ## Environments
 
@@ -43,9 +46,27 @@ make init-local
 make up-local
 ```
 
+Linux one-click / console onboarding:
+
+```bash
+chmod +x ./scripts/onboarding/onboard-local.sh
+./scripts/onboarding/onboard-local.sh
+```
+
+Локальный прогон через готовые GHCR images:
+
+```bash
+cp .env.example .env
+sed -i '' 's/^LOCAL_USE_GHCR_IMAGES=.*/LOCAL_USE_GHCR_IMAGES=true/' .env
+sed -i '' 's/^LOCAL_BUILD_FROM_SOURCE=.*/LOCAL_BUILD_FROM_SOURCE=false/' .env
+make up-local
+```
+
 После старта:
 
 - Nginx: `http://localhost:8088`
+- CRM web: `http://localhost:5173`
+- Client web: `http://localhost:5174`
 - Core health: `http://localhost:8088/internal/core/actuator/health`
 - Files health: `http://localhost:8088/internal/files/actuator/health`
 - Notification health: `http://localhost:8088/internal/notification/actuator/health`
@@ -86,6 +107,7 @@ make up-prod
 - `make backup`
 - `make rollback`
 - `make config`
+- `make onboard-local`
 
 ## Deploy Flow
 
@@ -123,4 +145,9 @@ make up-prod
 
 - Для `staging` и `prod` по умолчанию ожидается deploy готовых Docker images из registry.
 - Для `local` можно собирать образы из соседних репозиториев через `make build-local`.
+- Для `local` WEB UI поднимаются из каталогов `WEB_SPEC_SOURCE_DIR` и `CLIENT_WEB_SOURCE_DIR`, собираются через `npm ci && npm run build`, а наружу публикуются через общий `nginx` на портах `5173` и `5174`.
+- Для локального smoke/deploy-теста можно включить `LOCAL_USE_GHCR_IMAGES=true` и запускать весь стек из готовых образов GHCR, без локальной сборки приложений.
+- Для `staging` и `prod` WEB UI должны приходить как готовые Docker images `WEB_SPEC_IMAGE` и `CLIENT_WEB_IMAGE`; сервер больше не обязан хранить исходники web-репозиториев.
+- Для Linux есть canonical onboarding entrypoint `scripts/onboarding/onboard-local.sh`; GUI-запуск можно обернуть через `autoshop-onboard.desktop`.
+- Автоустановка Docker в v1 ориентирована на Ubuntu/Debian и требует `sudo`.
 - Production Nginx-конфиг сейчас рассчитан на внешний TLS termination. Если нужен TLS внутри контейнера, добавьте сертификаты и расширьте `nginx/prod/autoshop.conf`.

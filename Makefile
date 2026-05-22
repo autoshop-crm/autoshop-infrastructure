@@ -2,7 +2,7 @@ SHELL := /bin/bash
 ENV ?= $(shell grep -E '^ENVIRONMENT=' .env 2>/dev/null | cut -d= -f2 || echo local)
 
 .PHONY: init-local init-staging init-prod build-local up-local down-local up-staging up-prod \
-	pull logs ps status restart health smoke backup rollback config
+	pull logs ps status restart health smoke backup rollback config onboard-local onboard-server
 
 init-local:
 	./scripts/init/init-env.sh local
@@ -59,3 +59,9 @@ rollback:
 
 config:
 	./scripts/ops/config-check.sh $(ENV)
+
+onboard-local:
+	./scripts/onboarding/onboard-local.sh
+
+onboard-server:
+	./scripts/onboarding/onboard-server.sh

@@ -25,19 +25,25 @@ fi
 buckets="${MINIO_BUCKETS:-autoshop-files}"
 network="$(docker_network_name "$env")"
 
-docker run --rm --network "$network" \
+docker run --rm --network "$network" --entrypoint /bin/sh \
   -e MINIO_ROOT_USER="$MINIO_ROOT_USER" \
   -e MINIO_ROOT_PASSWORD="$MINIO_ROOT_PASSWORD" \
   -e MINIO_BUCKETS="$buckets" \
-  "$MC_IMAGE" sh -ceu '
+  "$MC_IMAGE" -ceu '
     until mc alias set autoshop http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; do
       sleep 2
     done
-    IFS="," read -r -a BUCKETS <<< "$MINIO_BUCKETS"
-    for bucket in "${BUCKETS[@]}"; do
-      bucket="$(printf "%s" "$bucket" | xargs)"
+    buckets=$(printf "%s" "$MINIO_BUCKETS" | tr -d "[:space:]")
+    old_ifs="$IFS"
+    IFS=,
+    set -- $buckets
+    IFS="$old_ifs"
+    for bucket in "$@"; do
       [ -n "$bucket" ] || continue
-      mc mb --ignore-existing "autoshop/$bucket"
+      if mc ls "autoshop/$bucket" >/dev/null 2>&1; then
+        continue
+      fi
+      mc mb "autoshop/$bucket" >/dev/null 2>&1 || mc ls "autoshop/$bucket" >/dev/null 2>&1
     done
   '
 

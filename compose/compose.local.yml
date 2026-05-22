@@ -1,3 +1,9 @@
+volumes:
+  web_spec_node_modules:
+  web_spec_npm_cache:
+  client_web_node_modules:
+  client_web_npm_cache:
+
 services:
   postgres:
     ports:
@@ -56,6 +62,51 @@ services:
     ports:
       - "${FILES_PUBLIC_PORT:-8084}:8084"
 
+  web-spec:
+    image: node:22-alpine
+    restart: unless-stopped
+    working_dir: /app
+    command: >
+      sh -c "npm ci &&
+      npm run build &&
+      npm run preview -- --host 0.0.0.0 --port 4173"
+    environment:
+      VITE_GATEWAY_BASE_URL: ""
+    volumes:
+      - ${WEB_SPEC_SOURCE_DIR}:/app
+      - web_spec_node_modules:/app/node_modules
+      - web_spec_npm_cache:/root/.npm
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4173 >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+    networks:
+      - autoshop
+
+  client-web:
+    image: node:22-alpine
+    restart: unless-stopped
+    working_dir: /app
+    command: >
+      sh -c "npm ci &&
+      npm run build &&
+      npm run preview -- --host 0.0.0.0 --port 4174"
+    environment:
+      VITE_GATEWAY_BASE_URL: ""
+      VITE_ENABLE_AUTH_MOCK: "false"
+    volumes:
+      - ${CLIENT_WEB_SOURCE_DIR}:/app
+      - client_web_node_modules:/app/node_modules
+      - client_web_npm_cache:/root/.npm
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4174 >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+    networks:
+      - autoshop
+
   nginx:
     image: ${NGINX_IMAGE}
     restart: unless-stopped
@@ -64,8 +115,12 @@ services:
       - auth
       - notification
       - files
+      - web-spec
+      - client-web
     ports:
       - "${NGINX_HTTP_PORT:-8088}:80"
+      - "${WEB_SPEC_PUBLIC_PORT:-5173}:81"
+      - "${CLIENT_WEB_PUBLIC_PORT:-5174}:82"
     volumes:
       - ${NGINX_CONF}:/etc/nginx/conf.d/default.conf:ro
     networks:

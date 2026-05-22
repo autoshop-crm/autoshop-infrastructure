@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Start AutoShop Local Setup
+Comment=Bootstrap AutoShop local infrastructure
+Path=.
+Exec=bash -lc 'cd "$(dirname "$1")" && ./run-onboarding.sh' dummy %k
+Terminal=true
+Categories=Development;

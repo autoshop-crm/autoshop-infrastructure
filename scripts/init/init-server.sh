@@ -16,6 +16,7 @@ docker compose version >/dev/null 2>&1 || die "docker compose is required"
 
 set_context "$env"
 require_env_files "$env"
+require_web_source_dirs "$env"
 
 [[ -f "$NGINX_CONF" ]] || die "Missing Nginx config: $NGINX_CONF"
 [[ -d "$POSTGRES_INIT_DIR" ]] || die "Missing postgres init dir: $POSTGRES_INIT_DIR"
