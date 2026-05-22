@@ -3,7 +3,7 @@ ENV ?= $(shell grep -E '^ENVIRONMENT=' .env 2>/dev/null | cut -d= -f2 || echo lo
 
 .PHONY: init-local init-staging init-prod build-local up-local down-local up-staging up-prod \
 	pull logs ps status restart health smoke backup rollback config onboard-local onboard-server \
-	onboard-macos reload-macos-nginx clean-staging clean-staging-hard clean-prod clean-prod-hard \
+	onboard-macos reload-macos-nginx tunnel-macos clean-staging clean-staging-hard clean-prod clean-prod-hard \
 	clean-macos clean-macos-hard
 
 init-local:
@@ -73,6 +73,9 @@ onboard-macos:
 
 reload-macos-nginx:
 	./scripts/ops/reload-nginx.sh staging
+
+tunnel-macos:
+	./scripts/ops/tunnel-macos.sh staging
 
 clean-staging:
 	./scripts/ops/clean-env.sh staging soft
