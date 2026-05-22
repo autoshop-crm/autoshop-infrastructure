@@ -141,6 +141,9 @@ compose_cmd() {
       -f "$ROOT_DIR/compose/compose.base.yml"
       -f "$ROOT_DIR/compose/compose.$env.yml"
     )
+    if [[ "$(uname -s)" == "Darwin" && -f "$ROOT_DIR/compose/compose.macos.yml" ]]; then
+      compose_args+=(-f "$ROOT_DIR/compose/compose.macos.yml")
+    fi
     if [[ "$env" == "local" && "$LOCAL_USE_GHCR_IMAGES" == "true" ]]; then
       compose_args+=(-f "$ROOT_DIR/compose/compose.local.images.yml")
     fi

@@ -16,9 +16,14 @@ pull_delay_seconds="${PULL_RETRY_DELAY_SECONDS:-8}"
 pull_one_image() {
   local image="$1"
   local attempt=1
+  local pull_cmd=(docker pull)
+
+  if [[ -n "${DOCKER_DEFAULT_PLATFORM:-}" ]]; then
+    pull_cmd+=(--platform "$DOCKER_DEFAULT_PLATFORM")
+  fi
 
   while (( attempt <= pull_retries )); do
-    if docker pull "$image"; then
+    if "${pull_cmd[@]}" "$image"; then
       log "Pulled ${image} on attempt ${attempt}/${pull_retries}"
       return 0
     fi

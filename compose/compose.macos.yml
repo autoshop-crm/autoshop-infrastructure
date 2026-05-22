@@ -1,0 +1,18 @@
+services:
+  auth:
+    platform: linux/amd64
+
+  core:
+    platform: linux/amd64
+
+  notification:
+    platform: linux/amd64
+
+  files:
+    platform: linux/amd64
+
+  web-spec:
+    platform: linux/amd64
+
+  client-web:
+    platform: linux/amd64
