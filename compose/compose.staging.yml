@@ -73,5 +73,6 @@ services:
       - "${CLIENT_WEB_PUBLIC_PORT:-5174}:82"
     volumes:
       - ${NGINX_CONF}:/etc/nginx/conf.d/default.conf:ro
+      - ${ROOT_DIR:-.}/nginx/proxy_params:/etc/nginx/proxy_params:ro
     networks:
       - autoshop
