@@ -43,6 +43,12 @@ set_context() {
   local env="${1:-${ENVIRONMENT:-local}}"
   load_root_env
 
+  if [[ "$(uname -s)" == "Darwin" && -d "$ROOT_DIR/.runtime/macos" ]]; then
+    if [[ -z "${AUTOSHOP_HOME:-}" || "${AUTOSHOP_HOME:-}" == "/opt/autoshop" ]]; then
+      export AUTOSHOP_HOME="$ROOT_DIR/.runtime/macos"
+    fi
+  fi
+
   export ENVIRONMENT="$env"
   export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-autoshop}"
   export AUTOSHOP_HOME="${AUTOSHOP_HOME:-/opt/autoshop}"
