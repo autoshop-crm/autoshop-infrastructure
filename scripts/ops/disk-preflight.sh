@@ -16,9 +16,9 @@ if [[ "$env" == "local" ]]; then
   target_dir="$ROOT_DIR"
 fi
 
-if [[ ! -e "$target_dir" ]]; then
+while [[ ! -e "$target_dir" && "$target_dir" != "/" ]]; do
   target_dir="$(dirname "$target_dir")"
-fi
+done
 
 available_kb="$(df -Pk "$target_dir" | awk 'NR==2 {print $4}')"
 available_gb="$((available_kb / 1024 / 1024))"
