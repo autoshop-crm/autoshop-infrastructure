@@ -59,7 +59,7 @@ check_compose_exec() {
 }
 
 check_nginx_internal "/health/nginx" "nginx" 15 2
-check_nginx_internal "/internal/core/actuator/health" "core" 45 2
+check_nginx_internal "/internal/core/actuator/health" "core" 90 2
 check_nginx_internal "/internal/files/actuator/health" "files" 30 2
 check_nginx_internal "/internal/notification/actuator/health" "notification" 30 2
 check_nginx_internal ":81/health/nginx" "crm-web nginx" 20 2
