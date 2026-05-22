@@ -180,3 +180,12 @@ random_secret() {
 
   date +%s | sha256sum | cut -d' ' -f1
 }
+
+read_env_value() {
+  local file="$1"
+  local key="$2"
+
+  [[ -f "$file" ]] || return 0
+
+  grep -E "^${key}=" "$file" | head -n 1 | cut -d= -f2- | sed 's/^"//; s/"$//'
+}
