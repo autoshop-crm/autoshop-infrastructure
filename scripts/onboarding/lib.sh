@@ -189,3 +189,23 @@ read_env_value() {
 
   grep -E "^${key}=" "$file" | head -n 1 | cut -d= -f2- | sed 's/^"//; s/"$//'
 }
+
+is_placeholder_secret() {
+  local value="${1:-}"
+  [[ -z "$value" ]] && return 0
+  [[ "$value" == "change-me" ]] && return 0
+  [[ "$value" == change-me-* ]] && return 0
+  [[ "$value" == *-change-me-* ]] && return 0
+  return 1
+}
+
+prefer_non_placeholder() {
+  local value
+  for value in "$@"; do
+    if ! is_placeholder_secret "$value"; then
+      printf '%s\n' "$value"
+      return 0
+    fi
+  done
+  printf '\n'
+}

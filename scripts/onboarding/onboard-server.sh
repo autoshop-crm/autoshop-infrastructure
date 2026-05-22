@@ -64,6 +64,9 @@ existing_core_minio_access_key="$(read_env_value "$ENV_DIR/core.env" "APP_MINIO_
 existing_core_minio_secret_key="$(read_env_value "$ENV_DIR/core.env" "APP_MINIO_SECRET_KEY")"
 existing_files_minio_access_key="$(read_env_value "$ENV_DIR/files.env" "MINIO_ACCESS_KEY")"
 existing_files_minio_secret_key="$(read_env_value "$ENV_DIR/files.env" "MINIO_SECRET_KEY")"
+existing_root_postgres_password="$(read_env_value "$ROOT_DIR/.env" "POSTGRES_PASSWORD")"
+existing_root_minio_user="$(read_env_value "$ROOT_DIR/.env" "MINIO_ROOT_USER")"
+existing_root_minio_password="$(read_env_value "$ROOT_DIR/.env" "MINIO_ROOT_PASSWORD")"
 
 default_admin_email="admin@autoshop.example"
 if [[ "$environment" == "staging" ]]; then
@@ -133,14 +136,41 @@ run_logged "$ROOT_DIR/scripts/init/init-directories.sh" "$environment"
 
 set_context "$environment"
 
-shared_postgres_password="${existing_core_db_password:-${existing_auth_db_password:-${existing_notification_db_password:-${existing_files_db_password:-${POSTGRES_PASSWORD:-autoshop}}}}}"
-shared_minio_access_key="${existing_core_minio_access_key:-${existing_files_minio_access_key:-${MINIO_ROOT_USER:-minioadmin}}}"
-shared_minio_secret_key="${existing_core_minio_secret_key:-${existing_files_minio_secret_key:-${MINIO_ROOT_PASSWORD:-minioadmin123}}}"
+shared_postgres_password="$(prefer_non_placeholder \
+  "$existing_root_postgres_password" \
+  "$existing_core_db_password" \
+  "$existing_auth_db_password" \
+  "$existing_notification_db_password" \
+  "$existing_files_db_password")"
+if is_placeholder_secret "$shared_postgres_password"; then
+  shared_postgres_password="$(random_secret)"
+fi
+
+shared_minio_access_key="$(prefer_non_placeholder \
+  "$existing_root_minio_user" \
+  "$existing_core_minio_access_key" \
+  "$existing_files_minio_access_key" \
+  "${MINIO_ROOT_USER:-}")"
+if is_placeholder_secret "$shared_minio_access_key"; then
+  shared_minio_access_key="minioadmin"
+fi
+
+shared_minio_secret_key="$(prefer_non_placeholder \
+  "$existing_root_minio_password" \
+  "$existing_core_minio_secret_key" \
+  "$existing_files_minio_secret_key" \
+  "${MINIO_ROOT_PASSWORD:-}")"
+if is_placeholder_secret "$shared_minio_secret_key"; then
+  shared_minio_secret_key="$(random_secret)"
+fi
 
 write_env_value "$ROOT_DIR/.env" "ENVIRONMENT" "$environment"
 write_env_value "$ROOT_DIR/.env" "WEB_SPEC_PUBLIC_PORT" "$crm_port"
 write_env_value "$ROOT_DIR/.env" "CLIENT_WEB_PUBLIC_PORT" "$client_port"
 write_env_value "$ROOT_DIR/.env" "NGINX_HTTP_PORT" "${NGINX_HTTP_PORT:-80}"
+write_env_value "$ROOT_DIR/.env" "POSTGRES_PASSWORD" "$shared_postgres_password"
+write_env_value "$ROOT_DIR/.env" "MINIO_ROOT_USER" "$shared_minio_access_key"
+write_env_value "$ROOT_DIR/.env" "MINIO_ROOT_PASSWORD" "$shared_minio_secret_key"
 write_env_value "$ROOT_DIR/.env" "SERVER_ACCESS_POINT" "$server_access_point"
 write_env_value "$ROOT_DIR/.env" "CORE_IMAGE" "$core_image"
 write_env_value "$ROOT_DIR/.env" "CORE_IMAGE_TAG" "$core_image_tag"
