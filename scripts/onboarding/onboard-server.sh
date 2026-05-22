@@ -130,6 +130,7 @@ case "${install_docker_choice,,}" in
 esac
 
 "$SCRIPT_DIR/check-docker.sh"
+run_logged "$ROOT_DIR/scripts/ops/disk-preflight.sh" "$environment"
 
 run_logged "$ROOT_DIR/scripts/init/init-env.sh" "$environment"
 run_logged "$ROOT_DIR/scripts/init/init-directories.sh" "$environment"
