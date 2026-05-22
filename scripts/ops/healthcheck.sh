@@ -13,6 +13,15 @@ require_command curl
 
 compose_cmd "$env" ps >/dev/null
 
+print_diagnostics() {
+  log "Healthcheck diagnostics for ${env}:"
+  compose_cmd "$env" ps || true
+  log "Recent nginx logs:"
+  compose_cmd "$env" logs --tail=80 nginx || true
+}
+
+trap 'print_diagnostics' ERR
+
 check_http() {
   local url="$1"
   local label="$2"
@@ -22,6 +31,26 @@ check_http() {
   log "$label is healthy"
 }
 
+check_nginx_internal() {
+  local path="$1"
+  local label="$2"
+  local retries="${3:-30}"
+  local delay="${4:-2}"
+  local attempt
+
+  for attempt in $(seq 1 "$retries"); do
+    if compose_cmd "$env" exec -T nginx sh -ceu \
+      "wget -qO- 'http://127.0.0.1${path}' >/dev/null || curl -fsS 'http://127.0.0.1${path}' >/dev/null"; then
+      log "$label is reachable via nginx internal route: http://127.0.0.1${path}"
+      log "$label is healthy"
+      return 0
+    fi
+    sleep "$delay"
+  done
+
+  die "$label did not become reachable via nginx internal route: http://127.0.0.1${path}"
+}
+
 check_compose_exec() {
   local service="$1"
   shift
@@ -29,12 +58,14 @@ check_compose_exec() {
   log "$service internal check passed"
 }
 
-check_http "http://127.0.0.1:${NGINX_HTTP_PORT}/health/nginx" "nginx" 15 2
-check_http "http://127.0.0.1:${NGINX_HTTP_PORT}/internal/core/actuator/health" "core" 45 2
-check_http "http://127.0.0.1:${NGINX_HTTP_PORT}/internal/files/actuator/health" "files" 30 2
-check_http "http://127.0.0.1:${NGINX_HTTP_PORT}/internal/notification/actuator/health" "notification" 30 2
-check_http "http://127.0.0.1:${WEB_SPEC_PUBLIC_PORT}/health/nginx" "crm-web nginx" 20 2
-check_http "http://127.0.0.1:${CLIENT_WEB_PUBLIC_PORT}/health/nginx" "client-web nginx" 20 2
+check_nginx_internal "/health/nginx" "nginx" 15 2
+check_nginx_internal "/internal/core/actuator/health" "core" 45 2
+check_nginx_internal "/internal/files/actuator/health" "files" 30 2
+check_nginx_internal "/internal/notification/actuator/health" "notification" 30 2
+check_nginx_internal ":81/health/nginx" "crm-web nginx" 20 2
+check_nginx_internal ":82/health/nginx" "client-web nginx" 20 2
+
+check_http "http://127.0.0.1:${NGINX_HTTP_PORT}/health/nginx" "nginx public port" 10 2
 
 auth_status="$(curl -s -o /dev/null -w '%{http_code}' \
   -H 'Content-Type: application/json' \
