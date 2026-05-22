@@ -3,7 +3,8 @@ ENV ?= $(shell grep -E '^ENVIRONMENT=' .env 2>/dev/null | cut -d= -f2 || echo lo
 
 .PHONY: init-local init-staging init-prod build-local up-local down-local up-staging up-prod \
 	pull logs ps status restart health smoke backup rollback config onboard-local onboard-server \
-	clean-staging clean-staging-hard clean-prod clean-prod-hard
+	onboard-macos clean-staging clean-staging-hard clean-prod clean-prod-hard \
+	clean-macos clean-macos-hard
 
 init-local:
 	./scripts/init/init-env.sh local
@@ -67,6 +68,9 @@ onboard-local:
 onboard-server:
 	./scripts/onboarding/onboard-server.sh
 
+onboard-macos:
+	./scripts/onboarding/onboard-macos.sh
+
 clean-staging:
 	./scripts/ops/clean-env.sh staging soft
 
@@ -78,3 +82,9 @@ clean-prod:
 
 clean-prod-hard:
 	./scripts/ops/clean-env.sh prod hard
+
+clean-macos:
+	./scripts/ops/clean-env.sh staging soft
+
+clean-macos-hard:
+	./scripts/ops/clean-env.sh staging hard

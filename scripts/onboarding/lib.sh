@@ -26,6 +26,10 @@ require_linux() {
   load_os_release
 }
 
+require_macos() {
+  [[ "$(uname -s)" == "Darwin" ]] || die "macOS onboarding supports macOS only"
+}
+
 linux_family() {
   load_os_release
   case "$ID" in
