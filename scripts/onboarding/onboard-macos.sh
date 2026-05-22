@@ -82,7 +82,7 @@ admin_email="$(prompt_value "Admin email" "$default_admin_email")"
 
 if [[ -n "$existing_bootstrap_password" ]]; then
   keep_existing_password="$(prompt_value "Keep existing admin password? (yes/no)" "yes")"
-  case "${keep_existing_password,,}" in
+  case "$(lowercase "$keep_existing_password")" in
     yes|y) admin_password="$existing_bootstrap_password" ;;
     no|n) admin_password="$(prompt_secret "Admin password")" ;;
     *) die "Unsupported answer for existing admin password: $keep_existing_password" ;;
@@ -112,7 +112,7 @@ client_web_image="$(prompt_value "Client WEB image" "${existing_client_web_image
 client_web_image_tag="$(prompt_value "Client WEB image tag" "${existing_client_web_image_tag:-${CLIENT_WEB_IMAGE_TAG:-latest}}")"
 
 install_docker_choice="$(prompt_value "Install Docker automatically if missing? (yes/no)" "yes")"
-case "${install_docker_choice,,}" in
+case "$(lowercase "$install_docker_choice")" in
   yes|y) "$SCRIPT_DIR/install-docker-macos.sh" ;;
   no|n) log "Skipping Docker install by user choice" ;;
   *) die "Unsupported answer for Docker install: $install_docker_choice" ;;

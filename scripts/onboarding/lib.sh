@@ -160,6 +160,10 @@ prompt_secret() {
   printf '%s\n' "$input"
 }
 
+lowercase() {
+  printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]'
+}
+
 write_env_value() {
   local file="$1"
   local key="$2"
