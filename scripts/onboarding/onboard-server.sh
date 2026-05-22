@@ -188,7 +188,7 @@ write_env_value "$ROOT_DIR/.env" "CLIENT_WEB_IMAGE_TAG" "$client_web_image_tag"
 
 write_env_value "$ENV_DIR/auth.env" "BOOTSTRAP_EMAIL" "$admin_email"
 write_env_value "$ENV_DIR/auth.env" "BOOTSTRAP_PASSWORD" "$admin_password"
-write_env_value "$ENV_DIR/auth.env" "BOOTSTRAP_ROLE" "ADMIN"
+write_env_value "$ENV_DIR/auth.env" "BOOTSTRAP_ROLE" "MANAGER"
 write_env_value "$ENV_DIR/auth.env" "JWT_SECRET" "${existing_jwt_secret:-$(random_secret)}"
 write_env_value "$ENV_DIR/auth.env" "DB_PASSWORD" "$shared_postgres_password"
 
