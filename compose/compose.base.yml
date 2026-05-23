@@ -24,7 +24,6 @@ services:
   redis:
     image: ${REDIS_IMAGE}
     restart: unless-stopped
-    working_dir: /data
     command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
     volumes:
       - ${DATA_ROOT}/redis:/data
