@@ -4,7 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/../lib/common.sh"
+source "$SCRIPT_DIR/../onboarding/lib.sh"
 
 [[ "$(uname -s)" == "Darwin" ]] || die "update-macos supports macOS only"
 
