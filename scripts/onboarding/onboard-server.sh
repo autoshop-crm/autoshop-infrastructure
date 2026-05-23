@@ -137,7 +137,7 @@ run_logged "$ROOT_DIR/scripts/init/init-directories.sh" "$environment"
 
 set_context "$environment"
 
-shared_postgres_password="$(prefer_non_placeholder \
+shared_postgres_password="$(resolve_shared_postgres_password \
   "$existing_root_postgres_password" \
   "$existing_core_db_password" \
   "$existing_auth_db_password" \

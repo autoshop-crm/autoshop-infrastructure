@@ -217,3 +217,31 @@ prefer_non_placeholder() {
   done
   printf '\n'
 }
+
+postgres_data_initialized() {
+  local data_root="${1:-${DATA_ROOT:-}}"
+  [[ -n "$data_root" ]] || return 1
+  [[ -f "$data_root/postgres/PG_VERSION" ]]
+}
+
+resolve_shared_postgres_password() {
+  local root_password="${1:-}"
+  local core_password="${2:-}"
+  local auth_password="${3:-}"
+  local notification_password="${4:-}"
+  local files_password="${5:-}"
+  local resolved
+
+  resolved="$(prefer_non_placeholder \
+    "$auth_password" \
+    "$core_password" \
+    "$notification_password" \
+    "$files_password" \
+    "$root_password")"
+
+  if postgres_data_initialized "${DATA_ROOT:-}" && [[ -n "$root_password" ]] && [[ -n "$resolved" ]] && [[ "$root_password" != "$resolved" ]]; then
+    log "Detected existing Postgres data; keeping service env database password instead of stale .env POSTGRES_PASSWORD"
+  fi
+
+  printf '%s\n' "$resolved"
+}
