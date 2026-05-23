@@ -58,6 +58,29 @@ check_compose_exec() {
   log "$service internal check passed"
 }
 
+check_auth_reachability() {
+  local retries="${1:-45}"
+  local delay="${2:-2}"
+  local attempt
+  local auth_status
+
+  for attempt in $(seq 1 "$retries"); do
+    auth_status="$(curl -s -o /dev/null -w '%{http_code}' \
+      -H 'Content-Type: application/json' \
+      -d '{}' \
+      "http://127.0.0.1:${NGINX_HTTP_PORT}/api/auth/login" || true)"
+    case "$auth_status" in
+      200|400|401|403|415|422)
+        log "auth is reachable via /api/auth/login (status $auth_status)"
+        return 0
+        ;;
+    esac
+    sleep "$delay"
+  done
+
+  die "Auth reachability check failed with status ${auth_status:-unknown}"
+}
+
 check_nginx_internal "/health/nginx" "nginx" 15 2
 check_nginx_internal "/internal/core/actuator/health" "core" 90 2
 check_nginx_internal "/internal/files/actuator/health" "files" 30 2
@@ -66,19 +89,7 @@ check_nginx_internal ":81/health/nginx" "crm-web nginx" 20 2
 check_nginx_internal ":82/health/nginx" "client-web nginx" 20 2
 
 check_http "http://127.0.0.1:${NGINX_HTTP_PORT}/health/nginx" "nginx public port" 10 2
-
-auth_status="$(curl -s -o /dev/null -w '%{http_code}' \
-  -H 'Content-Type: application/json' \
-  -d '{}' \
-  "http://127.0.0.1:${NGINX_HTTP_PORT}/api/auth/login")"
-case "$auth_status" in
-  200|400|401|403|415|422)
-    log "auth is reachable via /api/auth/login (status $auth_status)"
-    ;;
-  *)
-    die "Auth reachability check failed with status $auth_status"
-    ;;
-esac
+check_auth_reachability 45 2
 
 check_compose_exec redis redis-cli ping
 check_compose_exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
