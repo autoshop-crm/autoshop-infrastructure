@@ -108,6 +108,55 @@ make up-prod
 - `make rollback`
 - `make config`
 - `make onboard-local`
+- `make onboard-server`
+- `make onboard-macos`
+- `make update-macos`
+- `make reload-macos-nginx`
+- `make tunnel-macos`
+- `make clean-macos`
+- `make clean-macos-hard`
+
+## macOS Demo Flow
+
+Первый запуск на macOS:
+
+```bash
+make onboard-macos
+```
+
+Обычное обновление без удаления данных:
+
+```bash
+make update-macos
+```
+
+Пересоздать только `nginx` после изменения demo-маршрутов:
+
+```bash
+make reload-macos-nginx
+```
+
+Поднять один публичный tunnel для демо:
+
+```bash
+make tunnel-macos
+```
+
+Быстрая локальная проверка после запуска:
+
+```bash
+curl -i http://localhost:8088/
+curl -i http://localhost:8088/client/
+curl -i http://localhost:8088/crm/
+```
+
+Полезные URL для macOS demo-flow:
+
+- Gateway / selector: `http://localhost:8088/`
+- Client web: `http://localhost:8088/client/`
+- CRM web: `http://localhost:8088/crm/`
+- Nginx health: `http://localhost:8088/health/nginx`
+- Core health: `http://localhost:8088/internal/core/actuator/health`
 
 ## Deploy Flow
 
