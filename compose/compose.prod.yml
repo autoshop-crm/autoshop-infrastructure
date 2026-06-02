@@ -1,4 +1,15 @@
 services:
+  mailhog:
+    image: ${MAILHOG_IMAGE}
+    restart: unless-stopped
+    profiles:
+      - mailhog
+    ports:
+      - "127.0.0.1:${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAILHOG_UI_PORT:-8025}:8025"
+    networks:
+      - autoshop
+
   auth:
     env_file:
       - ${ENV_DIR}/infrastructure.env
@@ -34,7 +45,7 @@ services:
     image: ${CLIENT_WEB_IMAGE}:${CLIENT_WEB_IMAGE_TAG}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80 >/dev/null"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/client/ >/dev/null"]
       interval: 15s
       timeout: 5s
       retries: 20

@@ -58,7 +58,7 @@ if [[ "$env" != "local" || "${LOCAL_USE_GHCR_IMAGES}" == "true" ]]; then
   )
 fi
 
-if [[ "$env" != "prod" ]]; then
+if [[ "$env" != "prod" || ",${COMPOSE_PROFILES:-}," == *,mailhog,* ]]; then
   images+=("${MAILHOG_IMAGE}")
 fi
 

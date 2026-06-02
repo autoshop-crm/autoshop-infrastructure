@@ -67,6 +67,16 @@ existing_files_minio_secret_key="$(read_env_value "$ENV_DIR/files.env" "MINIO_SE
 existing_root_postgres_password="$(read_env_value "$ROOT_DIR/.env" "POSTGRES_PASSWORD")"
 existing_root_minio_user="$(read_env_value "$ROOT_DIR/.env" "MINIO_ROOT_USER")"
 existing_root_minio_password="$(read_env_value "$ROOT_DIR/.env" "MINIO_ROOT_PASSWORD")"
+existing_mail_mode="$(read_env_value "$ROOT_DIR/.env" "APP_MAIL_MODE")"
+existing_mail_profiles="$(read_env_value "$ROOT_DIR/.env" "COMPOSE_PROFILES")"
+existing_notification_mail_host="$(read_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_HOST")"
+existing_notification_mail_port="$(read_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_PORT")"
+existing_notification_mail_username="$(read_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_USERNAME")"
+existing_notification_mail_password="$(read_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_PASSWORD")"
+existing_notification_mail_auth="$(read_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_SMTP_AUTH")"
+existing_notification_mail_starttls="$(read_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_STARTTLS")"
+existing_notification_mail_from="$(read_env_value "$ENV_DIR/notification.env" "APP_MAIL_FROM")"
+existing_notification_mail_from_name="$(read_env_value "$ENV_DIR/notification.env" "APP_MAIL_FROM_NAME")"
 
 default_admin_email="admin@autoshop.example"
 if [[ "$environment" == "staging" ]]; then
@@ -102,6 +112,81 @@ server_access_point_default="${server_access_point_default:-SERVER_IP}"
 server_access_point="$(prompt_value "Server IP / base access point" "${existing_server_access_point:-$server_access_point_default}")"
 umapi_api_key="$(prompt_value "UMAPI API key (leave empty if not available)" "${existing_umapi_api_key:-${APP_UMAPI_API_KEY:-}}")"
 carreta_api_key="$(prompt_value "Carreta API key (leave empty if not available)" "${existing_carreta_api_key:-${APP_CARRETA_API_KEY:-}}")"
+
+default_mail_mode="disabled"
+if [[ ",${existing_mail_profiles:-}," == *,mailhog,* ]]; then
+  default_mail_mode="mailhog"
+elif [[ -n "$existing_mail_mode" ]]; then
+  default_mail_mode="$existing_mail_mode"
+elif [[ -n "$existing_notification_mail_host" && "$existing_notification_mail_host" != "smtp.example.com" ]]; then
+  default_mail_mode="smtp"
+fi
+
+mail_mode="$(lowercase "$(prompt_value "Mail mode (disabled/mailhog/smtp)" "$default_mail_mode")")"
+case "$mail_mode" in
+  disabled|mailhog|smtp)
+    ;;
+  *)
+    die "Unsupported mail mode: $mail_mode"
+    ;;
+esac
+
+mail_host="${existing_notification_mail_host:-smtp.example.com}"
+mail_port="${existing_notification_mail_port:-587}"
+mail_username="${existing_notification_mail_username:-}"
+mail_password="${existing_notification_mail_password:-}"
+mail_smtp_auth="${existing_notification_mail_auth:-true}"
+mail_starttls="${existing_notification_mail_starttls:-true}"
+mail_from_default="noreply@autoshop.example"
+if [[ "$environment" == "staging" ]]; then
+  mail_from_default="noreply@staging.autoshop.example"
+fi
+mail_from="${existing_notification_mail_from:-$mail_from_default}"
+mail_from_name="${existing_notification_mail_from_name:-AutoShop}"
+
+case "$mail_mode" in
+  disabled)
+    mail_health_enabled="false"
+    mail_compose_profiles=""
+    ;;
+  mailhog)
+    mail_health_enabled="true"
+    mail_compose_profiles="mailhog"
+    mail_host="mailhog"
+    mail_port="1025"
+    mail_username=""
+    mail_password=""
+    mail_smtp_auth="false"
+    mail_starttls="false"
+    ;;
+  smtp)
+    mail_health_enabled="true"
+    mail_compose_profiles=""
+    mail_host="$(prompt_value "SMTP host" "$mail_host")"
+    mail_port="$(prompt_value "SMTP port" "$mail_port")"
+    mail_username="$(prompt_value "SMTP username" "$mail_username")"
+    if ! is_placeholder_secret "$mail_password"; then
+      keep_existing_smtp_password="$(prompt_value "Keep existing SMTP password? (yes/no)" "yes")"
+      case "$(lowercase "$keep_existing_smtp_password")" in
+        yes|y)
+          ;;
+        no|n)
+          mail_password="$(prompt_secret "SMTP password")"
+          ;;
+        *)
+          die "Unsupported answer for existing SMTP password: $keep_existing_smtp_password"
+          ;;
+      esac
+    else
+      mail_password="$(prompt_secret "SMTP password")"
+    fi
+    mail_smtp_auth="$(prompt_value "SMTP auth enabled? (true/false)" "$mail_smtp_auth")"
+    mail_starttls="$(prompt_value "SMTP STARTTLS enabled? (true/false)" "$mail_starttls")"
+    ;;
+esac
+
+mail_from="$(prompt_value "Mail from address" "$mail_from")"
+mail_from_name="$(prompt_value "Mail from name" "$mail_from_name")"
 
 core_image="$(prompt_value "CORE image" "${existing_core_image:-${CORE_IMAGE:-ghcr.io/autoshop-crm/autoshop-core}}")"
 core_image_tag="$(prompt_value "CORE image tag" "${existing_core_image_tag:-${CORE_IMAGE_TAG:-latest}}")"
@@ -185,6 +270,8 @@ write_env_value "$ROOT_DIR/.env" "WEB_SPEC_IMAGE" "$web_spec_image"
 write_env_value "$ROOT_DIR/.env" "WEB_SPEC_IMAGE_TAG" "$web_spec_image_tag"
 write_env_value "$ROOT_DIR/.env" "CLIENT_WEB_IMAGE" "$client_web_image"
 write_env_value "$ROOT_DIR/.env" "CLIENT_WEB_IMAGE_TAG" "$client_web_image_tag"
+write_env_value "$ROOT_DIR/.env" "APP_MAIL_MODE" "$mail_mode"
+write_env_value "$ROOT_DIR/.env" "COMPOSE_PROFILES" "$mail_compose_profiles"
 
 write_env_value "$ENV_DIR/auth.env" "BOOTSTRAP_EMAIL" "$admin_email"
 write_env_value "$ENV_DIR/auth.env" "BOOTSTRAP_PASSWORD" "$admin_password"
@@ -202,6 +289,16 @@ write_env_value "$ENV_DIR/files.env" "MINIO_ACCESS_KEY" "$shared_minio_access_ke
 write_env_value "$ENV_DIR/files.env" "MINIO_SECRET_KEY" "$shared_minio_secret_key"
 write_env_value "$ENV_DIR/core.env" "APP_UMAPI_API_KEY" "$umapi_api_key"
 write_env_value "$ENV_DIR/core.env" "APP_CARRETA_API_KEY" "$carreta_api_key"
+write_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_HOST" "$mail_host"
+write_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_PORT" "$mail_port"
+write_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_USERNAME" "$mail_username"
+write_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_PASSWORD" "$mail_password"
+write_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_SMTP_AUTH" "$mail_smtp_auth"
+write_env_value "$ENV_DIR/notification.env" "SPRING_MAIL_STARTTLS" "$mail_starttls"
+write_env_value "$ENV_DIR/notification.env" "MANAGEMENT_HEALTH_MAIL_ENABLED" "$mail_health_enabled"
+write_env_value "$ENV_DIR/notification.env" "APP_MAIL_PROVIDER" "smtp"
+write_env_value "$ENV_DIR/notification.env" "APP_MAIL_FROM" "$mail_from"
+write_env_value "$ENV_DIR/notification.env" "APP_MAIL_FROM_NAME" "$mail_from_name"
 
 require_env_files "$environment"
 
