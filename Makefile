@@ -2,7 +2,7 @@ SHELL := /bin/bash
 ENV ?= $(shell grep -E '^ENVIRONMENT=' .env 2>/dev/null | cut -d= -f2 || echo local)
 
 .PHONY: init-local init-staging init-prod build-local up-local down-local up-staging up-prod \
-	pull logs ps status restart health smoke backup rollback config onboard-local onboard-server \
+	pull logs ps status restart health smoke backup rollback config update-prod onboard-local onboard-server \
 	onboard-macos update-macos reload-macos-nginx tunnel-macos clean-staging clean-staging-hard clean-prod clean-prod-hard \
 	clean-macos clean-macos-hard
 
@@ -61,6 +61,14 @@ rollback:
 
 config:
 	./scripts/ops/config-check.sh $(ENV)
+
+update-prod:
+	git pull
+	./scripts/backup/backup-postgres.sh prod
+	./scripts/backup/backup-minio.sh prod
+	./scripts/deploy/pull-images.sh prod
+	./scripts/deploy/deploy-prod.sh
+	./scripts/ops/healthcheck.sh prod
 
 onboard-local:
 	./scripts/onboarding/onboard-local.sh
