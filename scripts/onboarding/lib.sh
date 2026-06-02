@@ -178,6 +178,10 @@ write_env_value() {
   else
     printf '%s=%s\n' "$key" "$value" >>"$file"
   fi
+
+  if [[ "$file" == "$ROOT_DIR/.env" && "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+    export "$key=$value"
+  fi
 }
 
 random_secret() {
